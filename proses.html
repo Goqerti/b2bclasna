@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8" />
+  <title>B2B Admin Panel - Professional</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* --- STYLE RESET & BASE --- */
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; color: #374151; display: flex; height: 100vh; overflow: hidden; }
+    
+    /* SIDEBAR */
+    .sidebar { width: 240px; background: #111827; color: #f3f4f6; display: flex; flex-direction: column; flex-shrink: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.2); transition: all 0.3s; }
+    .sidebar h1 { font-size: 20px; text-align: center; margin: 20px 0; color: #38bdf8; font-weight: 800; letter-spacing: 1px; }
+    .nav-item { padding: 15px 25px; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; font-weight: 500; display: flex; align-items: center; gap: 10px; }
+    .nav-item:hover { background: #1f2937; }
+    .nav-item.active { background: #3b82f6; border-left-color: #fff; color: white; }
+    
+    /* ROLE UTILS */
+    .d-none { display: none !important; }
+
+    .logout { margin-top: auto; padding: 20px; color: #ef4444; cursor: pointer; border-top: 1px solid #374151; font-weight: bold; text-align: center; transition: 0.2s; }
+    .logout:hover { background: #374151; }
+
+    /* MAIN AREA */
+    .main { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+    
+    /* TABS */
+    .company-tabs { display: flex; align-items: flex-end; background: #e5e7eb; padding: 10px 20px 0 20px; border-bottom: 1px solid #d1d5db; height: 55px; flex-shrink: 0; overflow-x: auto; gap: 5px; }
+    .company-tab { background: #d1d5db; padding: 10px 25px; border-radius: 12px 12px 0 0; cursor: pointer; font-weight: 600; color: #6b7280; transition: 0.2s; min-width: 140px; text-align: center; border: 1px solid #9ca3af; border-bottom: none; position: relative; top: 1px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .company-tab.active { background: #f0f4f8; color: #111827; height: 46px; border-bottom: 1px solid #f0f4f8; z-index: 10; font-weight: 700; color: #2563eb; }
+    .company-tab:hover { background: #e2e8f0; }
+    
+    .add-comp-btn { background: #10b981; color: white; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-weight: bold; margin-bottom: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .delete-comp-btn { font-size: 10px; color: #ef4444; cursor: pointer; padding: 2px 5px; border-radius: 4px; font-weight: bold; }
+    .delete-comp-btn:hover { background: #fee2e2; }
+
+    /* CONTENT */
+    .content-scroll { padding: 30px; overflow-y: auto; flex-grow: 1; scroll-behavior: smooth; }
+    .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+    .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); margin-bottom: 25px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+    
+    /* INPUTS & BUTTONS */
+    input, select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 15px; outline: none; font-size: 14px; }
+    input:focus, select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; background: #3b82f6; color: white; transition: 0.2s; font-size: 13px; }
+    .btn:hover { background: #2563eb; }
+    .btn-red { background: #ef4444; } .btn-red:hover { background: #dc2626; }
+    .btn-green { background: #10b981; } .btn-green:hover { background: #059669; }
+    .btn-orange { background: #f59e0b; } .btn-orange:hover { background: #d97706; }
+    .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; } .btn-secondary:hover { background: #e2e8f0; }
+    .btn-purple { background: #8b5cf6; } .btn-purple:hover { background: #7c3aed; }
+
+    /* LIST ITEMS */
+    .list-item { padding: 15px; border-bottom: 1px dashed #e5e7eb; display: flex; justify-content: space-between; align-items: center; transition: 0.1s; }
+    .list-item:last-child { border-bottom: none; }
+    .list-item:hover { background: #f9fafb; }
+    .tag { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .tag.blue { background: #e0f2fe; color: #0369a1; }
+    
+    /* MODALS */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .modal { background: white; padding: 30px; border-radius: 16px; width: 600px; max-width: 90%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); max-height: 90vh; overflow-y: auto; }
+    
+    /* UTILS */
+    .detail-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+    .detail-table th { text-align: left; color: #6b7280; padding: 5px 0; }
+    .detail-table td { padding: 5px 0; border-bottom: 1px solid #f3f4f6; color: #111827; font-weight: 500; }
+    .room-type-row-inputs, .meal-plan-row-inputs { display: grid; grid-template-columns: 2fr 1fr 0.5fr 50px 60px; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .meal-plan-row-inputs { grid-template-columns: 2fr 1fr 60px; }
+    .room-type-row-inputs input { margin-bottom: 0 !important; }
+    .btn-action { background: none; border: none; padding: 5px 8px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: 4px; margin-left: 5px; }
+    .btn-delete { color: #ef4444; background: #fef2f2; border: 1px solid #ef4444; }
+    .flex { display: flex; gap: 10px; } .w-full { width: 100%; } .mt-10 { margin-top: 10px; }
+    .status-select { padding: 5px; border-radius: 5px; border: 1px solid #ddd; font-size: 12px; }
+  </style>
+</head>
+<body>
+    <script>
+        // AUTH CHECK & ROLE SETUP
+        const AUTH = JSON.parse(localStorage.getItem('b2b_agent_auth'));
+        if(!AUTH || (AUTH.role !== 'Admin' && AUTH.role !== 'ResManager')) {
+            window.location.href = 'login.html';
+        }
+        const IS_ADMIN = (AUTH.role === 'Admin');
+        const IS_RES_MANAGER = (AUTH.role === 'ResManager');
+    </script>
+
+    <div class="sidebar">
+        <h1>Admin Panel</h1>
+        
+        <div id="nav-hotels" class="nav-item active admin-only" onclick="switchView('hotels')">🏨 Hotellər</div>
+        <div id="nav-regions" class="nav-item admin-only" onclick="switchView('regions')">🌎 Regionlar</div>
+        <div id="nav-ops" class="nav-item admin-only" onclick="switchView('ops')">✈️ Transferlər</div>
+        <div id="nav-agents" class="nav-item admin-only" onclick="switchView('agents')">👤 Agent Təsdiqi</div>
+        
+        <div id="nav-res" class="nav-item" onclick="switchView('res')">📝 Rezervasiyalar</div>
+        
+        <div id="nav-sys" class="nav-item admin-only" onclick="switchView('sys_users')">🔑 Sistem İstifadəçiləri</div>
+
+        <div class="logout" onclick="localStorage.removeItem('b2b_agent_auth'); location.href='login.html'">Çıxış Et</div>
+    </div>
+
+    <div class="main">
+        <div class="company-tabs" id="companyTabsContainer"></div>
+
+        <div class="content-scroll" id="mainContent">
+            <div class="header-area">
+                <div>
+                    <h2 id="pageTitle" style="margin:0;">Panel</h2>
+                    <p style="margin:5px 0 0 0; font-size:13px; color:#6b7280;">Cari Şirkət: <strong id="currentCompName" style="color:#2563eb;">Yüklənir...</strong></p>
+                </div>
+                <div style="font-size:14px; font-weight:600; color:#374151;">
+                    <span style="color:#6b7280;">Login:</span> <span style="color:#2563eb;">${AUTH.name}</span>
+                    <span class="tag blue" style="margin-left:5px;">${IS_RES_MANAGER ? 'Rezervasiya Meneceri' : 'Administrator'}</span>
+                </div>
+            </div>
+            
+            <div id="view_hotels" class="role-view">
+                <div class="card">
+                    <h3>➕ Yeni Hotel Əlavə Et</h3>
+                    <div class="grid">
+                        <input id="hName" placeholder="Hotel Adı">
+                        <select id="hRegion"></select>
+                        <select id="hStars"><option value="3">3 ★</option><option value="4">4 ★</option><option value="5">5 ★</option></select>
+                        <input type="number" id="hEb" placeholder="Extra Bed 0">
+                    </div>
+                    <div class="mt-10"><strong style="font-size:13px;">Otaq Növləri</strong><div id="roomTypesAdmin"></div><button class="btn-secondary" onclick="createRoomTypeInput({}, 'roomTypesAdmin')">+ Otaq</button></div>
+                    <div class="mt-10"><strong style="font-size:13px;">Qidalanma</strong><div id="mealPlansAdmin"></div><button class="btn-secondary" onclick="createMealPlanInput({}, 'mealPlansAdmin')">+ Qidalanma</button></div>
+                    <button class="btn mt-10" onclick="saveHotel()">Yadda Saxla</button>
+                    <div id="hotelMsg" class="mt-10"></div>
+                </div>
+                <div class="card"><h3 style="margin-bottom:15px;">📋 Hotel Siyahısı</h3><div id="hotelsList"></div></div>
+            </div>
+
+            <div id="view_regions" class="role-view" style="display:none;">
+                <div class="card" style="max-width:500px;"><h3>➕ Region Əlavə Et</h3><input id="rName" placeholder="Ad"><button class="btn" onclick="saveRegion()">Əlavə Et</button></div>
+                <div class="card" id="regionsList"></div>
+            </div>
+
+            <div id="view_ops" class="role-view" style="display:none;">
+                <div class="card"><h3>➕ Transfer</h3><div class="grid"><input id="opName" placeholder="Ad"><input type="number" id="opSedan" placeholder="Sedan"><input type="number" id="opMini" placeholder="Minivan"></div><button class="btn" onclick="saveOp()">Əlavə Et</button></div>
+                <div class="card" id="opsList"></div>
+            </div>
+
+            <div id="view_agents" class="role-view" style="display:none;">
+                <div class="card"><h3>⏳ Gözləyən Agentlər</h3><p style="font-size:12px;color:#666">Agentin şirkət adını yoxlayaraq təsdiqləyin.</p><div id="pendingList"></div></div>
+                <div class="card"><h3>✅ Aktiv Agentlər</h3><div id="activeList"></div></div>
+            </div>
+
+            <div id="view_res" class="role-view" style="display:none;">
+                <div class="card" id="resList"></div>
+            </div>
+
+            <div id="view_sys_users" class="role-view" style="display:none;">
+                <div class="card">
+                    <h3>➕ Yeni Sistem İşçisi</h3>
+                    <div class="grid">
+                        <input id="sysName" placeholder="Ad Soyad">
+                        <input id="sysUser" placeholder="İstifadəçi Adı">
+                        <input id="sysEmail" type="email" placeholder="Email (Bildirişlər üçün)">
+                        <input id="sysPass" placeholder="Şifrə">
+                        <select id="sysRole">
+                            <option value="ResManager">Rezervasiya Meneceri</option>
+                            <option value="Admin">Administrator</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="createSysUser()">Yarat</button>
+                </div>
+                <div class="card"><h3>🔑 Sistem İstifadəçiləri</h3><div id="sysUsersList"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="newCompModal" class="modal-overlay"><div class="modal" style="width:400px;"><h3>Yeni Şirkət</h3><input id="newCompName" placeholder="Şirkət Adı"><div class="flex mt-10"><button class="btn w-full" onclick="createCompany()">Yarat</button><button class="btn btn-red w-full" onclick="document.getElementById('newCompModal').style.display='none'">Bağla</button></div></div></div>
+    <div id="cloneModal" class="modal-overlay"><div class="modal" style="width:400px;"><h3>📑 Kopyala</h3><p>Hədəf şirkət:</p><input type="hidden" id="cloneType"><input type="hidden" id="cloneId"><select id="cloneTargetSelect"></select><div class="flex mt-10"><button class="btn w-full" onclick="submitClone()">Kopyala</button><button class="btn btn-red w-full" onclick="document.getElementById('cloneModal').style.display='none'">Bağla</button></div></div></div>
+    <div id="editHotelModal" class="modal-overlay"><div class="modal"><h3>Redaktə</h3><input type="hidden" id="editHotelId"><div class="grid"><input id="editHotelName"><select id="editHotelRegionSelect"></select><select id="editHotelStars"><option value="3">3</option><option value="4">4</option><option value="5">5</option></select><input id="editExtraBedPrice"></div><div id="roomTypesModal" class="mt-10"></div><button class="btn-secondary" onclick="createRoomTypeInput({}, 'roomTypesModal')">+ Otaq</button><div id="mealPlansModal" class="mt-10"></div><button class="btn-secondary" onclick="createMealPlanInput({}, 'mealPlansModal')">+ Meal</button><button class="btn w-full mt-10" onclick="saveHotelFromModal()">Yadda Saxla</button><button class="btn btn-red w-full mt-10" onclick="closeModal('editHotelModal')">Bağla</button></div></div>
+    <div id="seasonalPriceModal" class="modal-overlay"><div class="modal"><h3>Mövsümi</h3><p id="seasonalRoomTitle"></p><div class="grid" style="grid-template-columns: 1fr 1fr 1fr;"><input type="date" id="seasStart"><input type="date" id="seasEnd"><input type="number" id="seasPrice"></div><button class="btn" onclick="addSeasonalRange()">+ Əlavə</button><div style="max-height:200px;overflow-y:auto;margin-top:10px;"><table class="w-full"><tbody id="seasonalListBody"></tbody></table></div><button class="btn w-full mt-10" onclick="saveSeasonalDataToRoom()">Təsdiq</button></div></div>
+    
+    <div id="agentEditModal" class="modal-overlay"><div class="modal"><h3>👤 Agent Redaktəsi</h3><input type="hidden" id="editAgentId"><label>Ad Soyad</label><input id="editAgentName"><label>İstifadəçi Adı</label><input id="editAgentUser"><label>Email</label><input id="editAgentEmail"><label>Şifrə</label><input id="editAgentPass" placeholder="Boş qalsa dəyişmir"><label>Şirkət</label><select id="editAgentComp"></select><div class="flex mt-10"><button class="btn btn-green w-full" onclick="saveAgentChanges()">Yadda Saxla</button><button class="btn btn-red w-full" onclick="deleteAgentFromEdit()">Sil</button><button class="btn btn-secondary w-full" onclick="document.getElementById('agentEditModal').style.display='none'">Bağla</button></div></div></div>
+
+    <div id="resDetailModal" class="modal-overlay"><div class="modal"><div style="display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding-bottom:10px;"><h2 style="margin:0;">Rezervasiya #<span id="dtID"></span></h2><button onclick="document.getElementById('resDetailModal').style.display='none'" style="border:none;background:none;font-size:24px;">&times;</button></div><div id="dtAlertArea"></div><div class="grid mt-10" style="grid-template-columns:1fr 1fr;"><div><small>AGENT</small><div id="dtAgent" style="font-weight:600;"></div><div id="dtRef" style="font-size:12px;color:#999;"></div></div><div><small>TARİX</small><div id="dtDates" style="font-weight:600;"></div></div></div><div style="background:#f9fafb;padding:10px;border-radius:8px;margin:10px 0;"><small>HOTEL</small><div id="dtHotel" style="font-weight:700;color:#2563eb;"></div><div id="dtRooms" style="font-size:13px;"></div></div><div class="grid" style="grid-template-columns:1fr 1fr;"><div><small>TRANSFER</small><div id="dtOps"></div></div><div><small>QİYMƏT</small><div id="dtPrice" style="font-weight:800;color:#10b981;"></div></div></div><div class="mt-10"><small>UÇUŞ</small><div id="dtFlight" style="font-size:13px;background:#eff6ff;padding:5px;"></div></div><div class="mt-10"><small>QONAQLAR</small><table class="detail-table"><thead><tr><th>Ad</th><th>Tip</th><th>Tarix</th><th>Vət.</th></tr></thead><tbody id="dtGuestsBody"></tbody></table></div><button class="btn w-full mt-10" onclick="document.getElementById('resDetailModal').style.display='none'">Bağla</button></div></div>
+
+    <script>
+        let db = { companies:[], hotels:[], regions:[], operations:[], agents:[], pending_agents:[], reservations:[] };
+        let activeCompId = 1; let activeView = IS_RES_MANAGER ? 'res' : 'hotels';
+        let currentEditingRoomId = null, seasonalDataStore = {}; 
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (IS_RES_MANAGER) {
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.add('d-none'));
+                activeView = 'res';
+                const btn = document.getElementById('newCompModal');
+                if(btn) btn.remove();
+            }
+            loadData();
+        });
+
+        async function loadData() {
+            try {
+                const r = await fetch('/api/data'); db = await r.json();
+                renderTabs();
+                if(IS_RES_MANAGER && activeView !== 'res') activeView = 'res';
+                switchView(activeView); 
+            } catch(e) { console.error(e); }
+        }
+
+        // TABS
+        function renderTabs() {
+            const con = document.getElementById('companyTabsContainer');
+            let html = '';
+            db.companies.sort((a,b)=>a.id-b.id).forEach(c => {
+                const isActive = c.id===activeCompId;
+                const delBtn = (IS_ADMIN && c.id!==1) ? `<span class="delete-comp-btn" onclick="deleteCompany(event, ${c.id})">✖</span>` : '';
+                html += `<div class="company-tab ${isActive?'active':''}" onclick="switchCompany(${c.id})">${c.name} ${delBtn}</div>`;
+            });
+            if(IS_ADMIN) html += `<button class="add-comp-btn" onclick="document.getElementById('newCompModal').style.display='flex'">+</button>`;
+            con.innerHTML = html;
+            document.getElementById('currentCompName').innerText = db.companies.find(c=>c.id===activeCompId)?.name || 'Unknown';
+        }
+
+        function switchCompany(id) { activeCompId = id; renderTabs(); refreshView(); }
+        async function createCompany() { const n = document.getElementById('newCompName').value; if(n) await fetch('/api/companies', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:n}) }); document.getElementById('newCompModal').style.display='none'; document.getElementById('newCompName').value=''; loadData(); }
+        async function deleteCompany(e, id) { e.stopPropagation(); if(confirm('Silinsin?')) { await fetch(`/api/companies/${id}`, { method:'DELETE' }); if(activeCompId===id) activeCompId=1; loadData(); } }
+
+        // VIEW & RENDER
+        function switchView(v) {
+            if(IS_RES_MANAGER && v !== 'res') return;
+            activeView = v;
+            document.querySelectorAll('.role-view').forEach(e => e.style.display = 'none');
+            document.getElementById('view_'+v).style.display = 'block';
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+            if(v==='hotels') document.getElementById('nav-hotels')?.classList.add('active');
+            if(v==='regions') document.getElementById('nav-regions')?.classList.add('active');
+            if(v==='ops') document.getElementById('nav-ops')?.classList.add('active');
+            if(v==='agents') document.getElementById('nav-agents')?.classList.add('active');
+            if(v==='res') document.getElementById('nav-res')?.classList.add('active');
+            if(v==='sys_users') document.getElementById('nav-sys')?.classList.add('active');
+            document.getElementById('pageTitle').innerText = {'hotels':'Hotellər','regions':'Regionlar','ops':'Transfer','agents':'Agent','res':'Rezervasiya','sys_users':'Sistem İ.'}[v];
+            refreshView();
+        }
+
+        function refreshView() {
+            const isGeneral = (activeCompId === 1);
+            const flt = (arr) => arr.filter(i => isGeneral ? (i.agentId===activeCompId || !i.agentId) : i.agentId===activeCompId);
+            const compOps = flt(db.operations);
+            const compRegs = flt(db.regions);
+            const compHotels = flt(db.hotels);
+
+            if(activeView==='hotels' && IS_ADMIN) {
+                document.getElementById('hRegion').innerHTML = compRegs.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
+                document.getElementById('hotelsList').innerHTML = compHotels.map(h=> `<div class="list-item"><div><strong>${h.name}</strong> ${!h.agentId?'<small style="color:red">(Global)</small>':''}</div><div><button class="btn btn-purple" onclick="openClone('hotels',${h.id})">📑</button> <button class="btn btn-secondary" onclick="openEditHotel(${h.id})">Redaktə</button> <button class="btn btn-red" onclick="del('hotels',${h.id})">Sil</button></div></div>`).join('');
+            }
+            if(activeView==='regions' && IS_ADMIN) {
+                document.getElementById('regionsList').innerHTML = compRegs.map(r=> `<div class="list-item">${r.name} <div><button class="btn btn-purple" onclick="openClone('regions',${r.id})">📑</button> <button class="btn btn-red" onclick="del('regions',${r.id})">Sil</button></div></div>`).join('');
+            }
+            if(activeView==='ops' && IS_ADMIN) {
+                document.getElementById('opsList').innerHTML = compOps.map(o=> `<div class="list-item">${o.name} <div><button class="btn btn-purple" onclick="openClone('operations',${o.id})">📑</button> <button class="btn btn-red" onclick="del('operations',${o.id})">Sil</button></div></div>`).join('');
+            }
+            if(activeView==='agents' && IS_ADMIN) renderAgents();
+            if(activeView==='res') renderRes();
+            if(activeView==='sys_users' && IS_ADMIN) renderSysUsers();
+        }
+
+        // SYSTEM USERS
+        async function createSysUser() {
+            const b = { name: document.getElementById('sysName').value, username: document.getElementById('sysUser').value, password: document.getElementById('sysPass').value, email: document.getElementById('sysEmail').value, role: document.getElementById('sysRole').value };
+            if(!b.username || !b.password || !b.email) return alert("Məlumatları tam doldurun");
+            const r = await fetch('/api/admin/users', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b) });
+            const d = await r.json(); if(d.success) { alert(d.message); loadData(); } else alert(d.error);
+        }
+        function renderSysUsers() {
+            const list = document.getElementById('sysUsersList');
+            const users = db.agents.filter(a => a.role === 'Admin' || a.role === 'ResManager');
+            list.innerHTML = users.map(u => `<div class="list-item"><div><strong>${u.name}</strong> (${u.role}) <br> <small>${u.username} | ${u.email || '-'}</small></div>${u.id !== 1 && u.id !== AUTH.id ? `<button class="btn btn-red" onclick="deleteSysUser(${u.id})">Sil</button>` : ''}</div>`).join('');
+        }
+        async function deleteSysUser(id) { if(confirm('Silinsin?')) { await fetch(`/api/admin/users/${id}`, { method:'DELETE' }); loadData(); } }
+
+        // AGENTS
+        function renderAgents() {
+            const p = document.getElementById('pendingList');
+            const opts = db.companies.map(c=>`<option value="${c.id}" ${c.id===activeCompId?'selected':''}>${c.name}</option>`).join('');
+            
+            // DÜZƏLİŞ BURADA: Şirkət adını göstər
+            p.innerHTML = db.pending_agents.map(a=>`
+                <div class="list-item" style="background:#fff7ed;">
+                    <div>
+                        <strong>${a.name}</strong> (${a.username}) <br>
+                        <small>📧 ${a.email}</small><br>
+                        <small>🏢 <b>${a.company || 'Qeyd yoxdur'}</b></small>
+                    </div>
+                    <div class="flex">
+                        <select id="ac_${a.id}" class="status-select">${opts}</select>
+                        <button class="btn btn-green" onclick="confAgent(${a.id})">✔</button>
+                        <button class="btn btn-red" onclick="rejAgent(${a.id})">✘</button>
+                    </div>
+                </div>`
+            ).join('') || 'Yoxdur';
+
+            const active = db.agents.filter(a => a.role!=='Admin' && a.role!=='ResManager' && a.companyId === activeCompId);
+            document.getElementById('activeList').innerHTML = active.map(a=>`<div class="list-item"><div><strong>${a.name}</strong> (${a.username})<br><small>${a.email||''}</small></div><button class="btn btn-secondary" onclick="openEditAgent(${a.id})">✏️ Redaktə</button></div>`).join('') || 'Yoxdur';
+        }
+        async function confAgent(id) { await fetch(`/api/agents/confirm/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({companyId:document.getElementById('ac_'+id).value})}); loadData(); }
+        async function rejAgent(id) { if(confirm('Sil?')) await fetch(`/api/agents/delete/${id}`,{method:'DELETE'}); loadData(); }
+
+        function openEditAgent(id) {
+            const ag = db.agents.find(a=>a.id===id); if(!ag) return;
+            document.getElementById('editAgentId').value = ag.id; document.getElementById('editAgentName').value = ag.name;
+            document.getElementById('editAgentUser').value = ag.username; document.getElementById('editAgentEmail').value = ag.email || '';
+            document.getElementById('editAgentPass').value = ''; 
+            const sel = document.getElementById('editAgentComp');
+            sel.innerHTML = db.companies.map(c=>`<option value="${c.id}" ${c.id===ag.companyId?'selected':''}>${c.name}</option>`).join('');
+            document.getElementById('agentEditModal').style.display='flex';
+        }
+        async function saveAgentChanges() {
+            const id = document.getElementById('editAgentId').value;
+            const body = { name: document.getElementById('editAgentName').value, username: document.getElementById('editAgentUser').value, email: document.getElementById('editAgentEmail').value, companyId: document.getElementById('editAgentComp').value, password: document.getElementById('editAgentPass').value || undefined };
+            await fetch(`/api/agents/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+            document.getElementById('agentEditModal').style.display='none'; loadData();
+        }
+        async function deleteAgentFromEdit() {
+            if(confirm('Silinsin?')) { await fetch(`/api/agents/delete/${document.getElementById('editAgentId').value}`, { method:'DELETE' }); document.getElementById('agentEditModal').style.display='none'; loadData(); }
+        }
+
+        // CLONE
+        function openClone(t,id) { document.getElementById('cloneType').value=t; document.getElementById('cloneId').value=id; const s=document.getElementById('cloneTargetSelect'); s.innerHTML=db.companies.filter(c=>c.id!==activeCompId).map(c=>`<option value="${c.id}">${c.name}</option>`).join(''); document.getElementById('cloneModal').style.display='flex'; }
+        async function submitClone() { await fetch('/api/clone',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:document.getElementById('cloneType').value,id:document.getElementById('cloneId').value,targetCompanyId:document.getElementById('cloneTargetSelect').value})}); document.getElementById('cloneModal').style.display='none'; }
+
+        // CRUD
+        async function saveHotel(){ const b={agentId:activeCompId, name:document.getElementById('hName').value, regionId:document.getElementById('hRegion').value, stars:document.getElementById('hStars').value, extraBedPricePerNight:document.getElementById('hEb').value, roomTypes:Array.from(document.querySelectorAll('#roomTypesAdmin .room-type-row-inputs')).map(r=>({name:r.querySelector('.room-name').value, pricePerNight:r.querySelector('.room-price').value, isExtraBedAllowed:r.querySelector('.room-eb-allowed').checked, seasonalPrices:seasonalDataStore[r.dataset.id]||[]})), mealPlans:Array.from(document.querySelectorAll('#mealPlansAdmin .meal-plan-row-inputs')).map(r=>({name:r.querySelector('.meal-name').value, pricePerPersonPerNight:r.querySelector('.meal-price').value}))}; if(b.name) await fetch('/api/hotels',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}); loadData(); resetHotelForm(); }
+        async function saveRegion(){ const n=document.getElementById('rName').value; if(n) await fetch('/api/regions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agentId:activeCompId,name:n})}); loadData(); document.getElementById('rName').value=''; }
+        async function saveOp(){ const n=document.getElementById('opName').value; if(n) await fetch('/api/operations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agentId:activeCompId,name:n,priceSedan:document.getElementById('opSedan').value,priceMinivan:document.getElementById('opMini').value})}); loadData(); document.getElementById('opName').value=''; }
+        async function del(t,id){ if(confirm('Sil?')) await fetch(`/api/${t}/${id}`,{method:'DELETE'}); loadData(); }
+
+        // RESERVATIONS
+        function renderRes() {
+            const list = document.getElementById('resList'); const isGen = (activeCompId === 1);
+            const rs = db.reservations.filter(r => {
+                const ag = db.agents.find(a=>a.username===r.submittingAgentUsername);
+                if(isGen) return (!ag || !ag.companyId || ag.companyId===1);
+                return ag && ag.companyId===activeCompId;
+            }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+            list.innerHTML = rs.map(r => {
+                const isC = r.status==='Cancelled'; let clr = r.status==='Confirmed'?'#dcfce7':r.status==='Processing'?'#fef9c3':r.status==='Date Change Requested'?'#ffedd5':isC?'#fee2e2':'#fff';
+                const opts = ['Processing','Admin Check','Confirmed','Rejected','Agent Date Change','Cancelled'].map(s => `<option value="${s}" ${r.status===s?'selected':''}>${s}</option>`).join('');
+                return `<div class="list-item" style="background:${isC?'#fff5f5':'white'};"><div style="flex:1;"><div style="font-weight:bold;">#${r.id} | ${r.submittingAgentUsername}</div><div style="font-size:12px;color:#666;">${r.summary.hotelNames} <br> ${r.summary.checkIn} ➝ ${r.summary.checkOut}</div></div><div style="text-align:right;"><div style="font-weight:bold;color:#10b981;">${r.summary.totalPrice} $</div><select onchange="updRes(${r.id},this.value)" style="margin:5px 0;padding:2px;font-size:11px;background:${clr};">${opts}</select><button class="btn" style="padding:4px 8px;font-size:11px;" onclick='showDetail(${JSON.stringify(r)})'>Bax</button></div></div>`;
+            }).join('') || 'Boşdur';
+        }
+        async function updRes(id, s) { await fetch(`/api/reservations/status/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:s})}); loadData(); }
+        
+        function showDetail(res) {
+            document.getElementById('dtID').innerText = res.id; document.getElementById('dtAgent').innerText = res.submittingAgentUsername; document.getElementById('dtRef').innerText = res.summary.agentResNumber || '-';
+            const alertArea = document.getElementById('dtAlertArea');
+            if(res.status === 'Date Change Requested' && res.changeRequest) { alertArea.innerHTML = `<div style="background:#fff7ed; border:1px solid #f97316; padding:15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;"><div><strong style="color:#c2410c;">⚠️ Tarix İstəyi</strong><br>${res.changeRequest.newCheckIn} ➝ ${res.changeRequest.newCheckOut}</div><button class="btn btn-orange" onclick="apprDate(${res.id}, '${res.changeRequest.newCheckIn}', '${res.changeRequest.newCheckOut}')">✅ Təsdiqlə</button></div>`; } else { alertArea.innerHTML = ''; }
+            document.getElementById('dtDates').innerText = `${res.summary.checkIn} ➝ ${res.summary.checkOut}`; document.getElementById('dtHotel').innerText = res.summary.hotelNames || '-';
+            document.getElementById('dtRooms').innerHTML = (res.summary.rooms && Array.isArray(res.summary.rooms)) ? res.summary.rooms.map(r => `<div>• ${r.roomName}</div>`).join('') : (res.summary.hotelNames || '-');
+            document.getElementById('dtOps').innerHTML = res.summary.operationsInfo || '-'; document.getElementById('dtPrice').innerText = res.summary.totalPrice + ' $';
+            const f = res.flightInfo || {}; document.getElementById('dtFlight').innerHTML = f.flightNumber ? `Flight: ${f.flightNumber} | Arr: ${f.arrival} | Dep: ${f.departure}` : 'Yoxdur';
+            const tb = document.getElementById('dtGuestsBody'); tb.innerHTML = ''; if(res.travelers) res.travelers.forEach(t => tb.innerHTML += `<tr><td>${t.name} ${t.surname}</td><td>${t.type}</td><td>${t.dob||'-'}</td><td>${t.nationality||'-'}</td></tr>`);
+            document.getElementById('resDetailModal').style.display = 'flex';
+        }
+        async function apprDate(id, inD, outD) { if(!confirm('Təsdiqlənsin?')) return; await fetch(`/api/reservations/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ summaryUpdate: { checkIn: inD, checkOut: outD }, status: 'Processing', changeRequest: null }) }); document.getElementById('resDetailModal').style.display = 'none'; loadData(); }
+
+        function createRoomTypeInput(rt={}, id) { const d=document.createElement('div'); d.className='room-type-row-inputs'; d.dataset.id=rt.id||'new_'+Math.random(); if(rt.seasonalPrices) seasonalDataStore[d.dataset.id]=rt.seasonalPrices; d.innerHTML=`<input type="text" placeholder="Ad" value="${rt.name||''}" class="room-name"><input type="number" placeholder="$" value="${rt.pricePerNight||0}" class="room-price"><div class="room-type-checkbox-group"><input type="checkbox" ${rt.isExtraBedAllowed?'checked':''} class="room-eb-allowed"><label style="font-size:10px;">Ex.B</label></div><button class="btn-action" onclick="openSeasonalModal('${d.dataset.id}',this)">📅</button><button class="btn-action btn-delete" onclick="this.parentElement.remove()">×</button>`; document.getElementById(id).appendChild(d); }
+        function createMealPlanInput(mp={}, id) { const d=document.createElement('div'); d.className='meal-plan-row-inputs'; d.innerHTML=`<input type="text" placeholder="Ad" value="${mp.name||''}" class="meal-name"><input type="number" placeholder="$" value="${mp.pricePerPersonPerNight||0}" class="meal-price"><button class="btn-action btn-delete" onclick="this.parentElement.remove()">×</button>`; document.getElementById(id).appendChild(d); }
+        function resetHotelForm() { document.getElementById('hName').value=''; document.getElementById('hEb').value=''; document.getElementById('roomTypesAdmin').innerHTML=''; document.getElementById('mealPlansAdmin').innerHTML=''; seasonalDataStore={}; createRoomTypeInput({}, 'roomTypesAdmin'); createMealPlanInput({}, 'mealPlansAdmin'); }
+        function openEditHotel(id) { const h = db.hotels.find(x=>x.id===id); if(!h) return; document.getElementById('editHotelId').value=h.id; document.getElementById('editHotelName').value=h.name; document.getElementById('editHotelRegionSelect').value=h.regionId; document.getElementById('editHotelStars').value=h.stars; document.getElementById('editExtraBedPrice').value=h.extraBedPricePerNight; seasonalDataStore={}; document.getElementById('roomTypesModal').innerHTML=''; h.roomTypes.forEach(rt=>createRoomTypeInput(rt,'roomTypesModal')); document.getElementById('mealPlansModal').innerHTML=''; h.mealPlans.forEach(mp=>createMealPlanInput(mp,'mealPlansModal')); document.getElementById('editHotelModal').style.display='flex'; }
+        async function saveHotelFromModal() { const id = document.getElementById('editHotelId').value; const payload = { name: document.getElementById('editHotelName').value, regionId: document.getElementById('editHotelRegionSelect').value, stars: document.getElementById('editHotelStars').value, extraBedPricePerNight: document.getElementById('editExtraBedPrice').value, roomTypes: Array.from(document.querySelectorAll('#roomTypesModal .room-type-row-inputs')).map(r => ({ id: (!r.dataset.id.startsWith('new_') ? Number(r.dataset.id):undefined), name:r.querySelector('.room-name').value, pricePerNight:r.querySelector('.room-price').value, isExtraBedAllowed:r.querySelector('.room-eb-allowed').checked, seasonalPrices: seasonalDataStore[r.dataset.id]||[] })), mealPlans: Array.from(document.querySelectorAll('#mealPlansModal .meal-plan-row-inputs')).map(r => ({ id: r.dataset.id?Number(r.dataset.id):undefined, name:r.querySelector('.meal-name').value, pricePerPersonPerNight:r.querySelector('.meal-price').value })) }; await fetch(`/api/hotels/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); closeModal('editHotelModal'); loadData(); }
+        function openSeasonalModal(id, btn) { currentEditingRoomId=id; const row = btn.closest('.room-type-row-inputs'); document.getElementById('seasonalRoomTitle').textContent = row ? "Room: " + row.querySelector('.room-name').value : ""; document.getElementById('seasonalPriceModal').style.display='flex'; renderSeasonalList(seasonalDataStore[id]||[]); }
+        function renderSeasonalList(list) { document.getElementById('seasonalListBody').innerHTML = list.map((x,i)=>`<tr><td>${x.start}</td><td>${x.end}</td><td style="color:#10b981;font-weight:bold;">${x.price}$</td><td><button style="color:red;border:none;background:none;cursor:pointer;" onclick="seasonalDataStore['${currentEditingRoomId}'].splice(${i},1);renderSeasonalList(seasonalDataStore['${currentEditingRoomId}'])">🗑️</button></td></tr>`).join(''); }
+        function addSeasonalRange() { const s=document.getElementById('seasStart').value, e=document.getElementById('seasEnd').value, p=document.getElementById('seasPrice').value; if(!s||!e||!p) return; if(!seasonalDataStore[currentEditingRoomId]) seasonalDataStore[currentEditingRoomId]=[]; seasonalDataStore[currentEditingRoomId].push({start:s,end:e,price:p}); renderSeasonalList(seasonalDataStore[currentEditingRoomId]); document.getElementById('seasStart').value=''; document.getElementById('seasEnd').value=''; document.getElementById('seasPrice').value=''; }
+        function saveSeasonalDataToRoom() { const btn = document.querySelector(`.room-type-row-inputs[data-id="${currentEditingRoomId}"] button[onclick^="openSeasonalModal"]`); if(btn && seasonalDataStore[currentEditingRoomId]?.length>0) { btn.style.background="#8b5cf6"; btn.style.color="white"; } closeModal('seasonalPriceModal'); }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; if(id==='editHotelModal') document.getElementById('editHotelMsg').style.display='none'; }
+
+        loadData();
+    </script>
+</body>
+</html>
