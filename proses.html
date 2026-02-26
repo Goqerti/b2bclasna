@@ -39,7 +39,7 @@
     .content-scroll { padding: 30px; overflow-y: auto; flex-grow: 1; scroll-behavior: smooth; }
     .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
     .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); margin-bottom: 25px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
     
     /* INPUTS & BUTTONS */
     input, select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 15px; outline: none; font-size: 14px; }
@@ -67,10 +67,10 @@
     .detail-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
     .detail-table th { text-align: left; color: #6b7280; padding: 5px 0; }
     .detail-table td { padding: 5px 0; border-bottom: 1px solid #f3f4f6; color: #111827; font-weight: 500; }
-    .room-type-row-inputs, .meal-plan-row-inputs { display: grid; grid-template-columns: 2fr 1fr 0.5fr 50px 60px; gap: 10px; align-items: center; margin-bottom: 10px; }
-    .meal-plan-row-inputs { grid-template-columns: 2fr 1fr 60px; }
+    .room-type-row-inputs { display: grid; grid-template-columns: 2fr 1fr 0.5fr 35px 35px 35px; gap: 8px; align-items: center; margin-bottom: 10px; }
+    .meal-plan-row-inputs { display: grid; grid-template-columns: 2fr 1fr 60px; gap: 10px; align-items: center; margin-bottom: 10px; }
     .room-type-row-inputs input { margin-bottom: 0 !important; }
-    .btn-action { background: none; border: none; padding: 5px 8px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: 4px; margin-left: 5px; }
+    .btn-action { background: none; border: none; padding: 5px 8px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center;}
     .btn-delete { color: #ef4444; background: #fef2f2; border: 1px solid #ef4444; }
     .flex { display: flex; gap: 10px; } .w-full { width: 100%; } .mt-10 { margin-top: 10px; }
     .status-select { padding: 5px; border-radius: 5px; border: 1px solid #ddd; font-size: 12px; }
@@ -122,6 +122,7 @@
                     <h3>➕ Yeni Hotel Əlavə Et</h3>
                     <div class="grid">
                         <input id="hName" placeholder="Hotel Adı">
+                        <input type="email" id="hEmail" placeholder="Hotel Email (Bildirişlər üçün)">
                         <select id="hRegion"></select>
                         <select id="hStars"><option value="3">3 ★</option><option value="4">4 ★</option><option value="5">5 ★</option></select>
                         <input type="number" id="hEb" placeholder="Extra Bed 0">
@@ -175,8 +176,12 @@
 
     <div id="newCompModal" class="modal-overlay"><div class="modal" style="width:400px;"><h3>Yeni Şirkət</h3><input id="newCompName" placeholder="Şirkət Adı"><div class="flex mt-10"><button class="btn w-full" onclick="createCompany()">Yarat</button><button class="btn btn-red w-full" onclick="document.getElementById('newCompModal').style.display='none'">Bağla</button></div></div></div>
     <div id="cloneModal" class="modal-overlay"><div class="modal" style="width:400px;"><h3>📑 Kopyala</h3><p>Hədəf şirkət:</p><input type="hidden" id="cloneType"><input type="hidden" id="cloneId"><select id="cloneTargetSelect"></select><div class="flex mt-10"><button class="btn w-full" onclick="submitClone()">Kopyala</button><button class="btn btn-red w-full" onclick="document.getElementById('cloneModal').style.display='none'">Bağla</button></div></div></div>
-    <div id="editHotelModal" class="modal-overlay"><div class="modal"><h3>Redaktə</h3><input type="hidden" id="editHotelId"><div class="grid"><input id="editHotelName"><select id="editHotelRegionSelect"></select><select id="editHotelStars"><option value="3">3</option><option value="4">4</option><option value="5">5</option></select><input id="editExtraBedPrice"></div><div id="roomTypesModal" class="mt-10"></div><button class="btn-secondary" onclick="createRoomTypeInput({}, 'roomTypesModal')">+ Otaq</button><div id="mealPlansModal" class="mt-10"></div><button class="btn-secondary" onclick="createMealPlanInput({}, 'mealPlansModal')">+ Meal</button><button class="btn w-full mt-10" onclick="saveHotelFromModal()">Yadda Saxla</button><button class="btn btn-red w-full mt-10" onclick="closeModal('editHotelModal')">Bağla</button></div></div>
-    <div id="seasonalPriceModal" class="modal-overlay"><div class="modal"><h3>Mövsümi</h3><p id="seasonalRoomTitle"></p><div class="grid" style="grid-template-columns: 1fr 1fr 1fr;"><input type="date" id="seasStart"><input type="date" id="seasEnd"><input type="number" id="seasPrice"></div><button class="btn" onclick="addSeasonalRange()">+ Əlavə</button><div style="max-height:200px;overflow-y:auto;margin-top:10px;"><table class="w-full"><tbody id="seasonalListBody"></tbody></table></div><button class="btn w-full mt-10" onclick="saveSeasonalDataToRoom()">Təsdiq</button></div></div>
+    
+    <div id="editHotelModal" class="modal-overlay"><div class="modal"><h3>Redaktə</h3><input type="hidden" id="editHotelId"><div class="grid"><input id="editHotelName" placeholder="Hotel Adı"><input type="email" id="editHotelEmail" placeholder="Hotel Email"><select id="editHotelRegionSelect"></select><select id="editHotelStars"><option value="3">3</option><option value="4">4</option><option value="5">5</option></select><input id="editExtraBedPrice" placeholder="Extra bed"></div><div id="roomTypesModal" class="mt-10"></div><button class="btn-secondary" onclick="createRoomTypeInput({}, 'roomTypesModal')">+ Otaq</button><div id="mealPlansModal" class="mt-10"></div><button class="btn-secondary" onclick="createMealPlanInput({}, 'mealPlansModal')">+ Meal</button><button class="btn w-full mt-10" onclick="saveHotelFromModal()">Yadda Saxla</button><button class="btn btn-red w-full mt-10" onclick="closeModal('editHotelModal')">Bağla</button></div></div>
+    
+    <div id="seasonalPriceModal" class="modal-overlay"><div class="modal"><h3>Mövsümi Qiymət</h3><p id="seasonalRoomTitle" style="font-weight:bold; color:#3b82f6; margin-bottom: 15px;"></p><div class="grid" style="grid-template-columns: 1fr 1fr 1fr;"><input type="date" id="seasStart"><input type="date" id="seasEnd"><input type="number" id="seasPrice" placeholder="Qiymət ($)"></div><button class="btn" onclick="addSeasonalRange()">+ Əlavə Et</button><div style="max-height:200px;overflow-y:auto;margin-top:10px;"><table class="w-full"><tbody id="seasonalListBody"></tbody></table></div><button class="btn w-full mt-10" onclick="saveSeasonalDataToRoom()">Təsdiqlə</button></div></div>
+    
+    <div id="stopSaleModal" class="modal-overlay"><div class="modal"><h3>🚫 Stop Sale Əlavə Et</h3><p id="stopSaleRoomTitle" style="font-weight:bold; color:#ef4444; margin-bottom: 15px;"></p><div class="grid" style="grid-template-columns: 1fr 1fr;"><input type="date" id="ssStart"><input type="date" id="ssEnd"></div><button class="btn btn-red mt-10" onclick="addStopSaleRange()">+ Stop Sale Əlavə</button><div style="max-height:200px;overflow-y:auto;margin-top:10px;"><table class="w-full"><tbody id="stopSaleListBody"></tbody></table></div><button class="btn w-full mt-10" onclick="saveStopSaleDataToRoom()">Təsdiqlə</button></div></div>
     
     <div id="agentEditModal" class="modal-overlay"><div class="modal"><h3>👤 Agent Redaktəsi</h3><input type="hidden" id="editAgentId"><label>Ad Soyad</label><input id="editAgentName"><label>İstifadəçi Adı</label><input id="editAgentUser"><label>Email</label><input id="editAgentEmail"><label>Şifrə</label><input id="editAgentPass" placeholder="Boş qalsa dəyişmir"><label>Şirkət</label><select id="editAgentComp"></select><div class="flex mt-10"><button class="btn btn-green w-full" onclick="saveAgentChanges()">Yadda Saxla</button><button class="btn btn-red w-full" onclick="deleteAgentFromEdit()">Sil</button><button class="btn btn-secondary w-full" onclick="document.getElementById('agentEditModal').style.display='none'">Bağla</button></div></div></div>
 
@@ -185,7 +190,7 @@
     <script>
         let db = { companies:[], hotels:[], regions:[], operations:[], agents:[], pending_agents:[], reservations:[] };
         let activeCompId = 1; let activeView = IS_RES_MANAGER ? 'res' : 'hotels';
-        let currentEditingRoomId = null, seasonalDataStore = {}; 
+        let currentEditingRoomId = null, seasonalDataStore = {}, stopSaleDataStore = {}; 
 
         document.addEventListener("DOMContentLoaded", () => {
             if (IS_RES_MANAGER) {
@@ -282,7 +287,6 @@
             const p = document.getElementById('pendingList');
             const opts = db.companies.map(c=>`<option value="${c.id}" ${c.id===activeCompId?'selected':''}>${c.name}</option>`).join('');
             
-            // DÜZƏLİŞ BURADA: Şirkət adını göstər
             p.innerHTML = db.pending_agents.map(a=>`
                 <div class="list-item" style="background:#fff7ed;">
                     <div>
@@ -328,7 +332,30 @@
         async function submitClone() { await fetch('/api/clone',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:document.getElementById('cloneType').value,id:document.getElementById('cloneId').value,targetCompanyId:document.getElementById('cloneTargetSelect').value})}); document.getElementById('cloneModal').style.display='none'; }
 
         // CRUD
-        async function saveHotel(){ const b={agentId:activeCompId, name:document.getElementById('hName').value, regionId:document.getElementById('hRegion').value, stars:document.getElementById('hStars').value, extraBedPricePerNight:document.getElementById('hEb').value, roomTypes:Array.from(document.querySelectorAll('#roomTypesAdmin .room-type-row-inputs')).map(r=>({name:r.querySelector('.room-name').value, pricePerNight:r.querySelector('.room-price').value, isExtraBedAllowed:r.querySelector('.room-eb-allowed').checked, seasonalPrices:seasonalDataStore[r.dataset.id]||[]})), mealPlans:Array.from(document.querySelectorAll('#mealPlansAdmin .meal-plan-row-inputs')).map(r=>({name:r.querySelector('.meal-name').value, pricePerPersonPerNight:r.querySelector('.meal-price').value}))}; if(b.name) await fetch('/api/hotels',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}); loadData(); resetHotelForm(); }
+        async function saveHotel(){ 
+            const b={
+                agentId:activeCompId, 
+                name:document.getElementById('hName').value, 
+                email:document.getElementById('hEmail').value, // Yeni əlavə edildi
+                regionId:document.getElementById('hRegion').value, 
+                stars:document.getElementById('hStars').value, 
+                extraBedPricePerNight:document.getElementById('hEb').value, 
+                roomTypes:Array.from(document.querySelectorAll('#roomTypesAdmin .room-type-row-inputs')).map(r=>({
+                    name:r.querySelector('.room-name').value, 
+                    pricePerNight:r.querySelector('.room-price').value, 
+                    isExtraBedAllowed:r.querySelector('.room-eb-allowed').checked, 
+                    seasonalPrices:seasonalDataStore[r.dataset.id]||[], 
+                    stopSales:stopSaleDataStore[r.dataset.id]||[]
+                })), 
+                mealPlans:Array.from(document.querySelectorAll('#mealPlansAdmin .meal-plan-row-inputs')).map(r=>({
+                    name:r.querySelector('.meal-name').value, 
+                    pricePerPersonPerNight:r.querySelector('.meal-price').value
+                }))
+            }; 
+            if(b.name) await fetch('/api/hotels',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}); 
+            loadData(); resetHotelForm(); 
+        }
+        
         async function saveRegion(){ const n=document.getElementById('rName').value; if(n) await fetch('/api/regions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agentId:activeCompId,name:n})}); loadData(); document.getElementById('rName').value=''; }
         async function saveOp(){ const n=document.getElementById('opName').value; if(n) await fetch('/api/operations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agentId:activeCompId,name:n,priceSedan:document.getElementById('opSedan').value,priceMinivan:document.getElementById('opMini').value})}); loadData(); document.getElementById('opName').value=''; }
         async function del(t,id){ if(confirm('Sil?')) await fetch(`/api/${t}/${id}`,{method:'DELETE'}); loadData(); }
@@ -363,15 +390,115 @@
         }
         async function apprDate(id, inD, outD) { if(!confirm('Təsdiqlənsin?')) return; await fetch(`/api/reservations/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ summaryUpdate: { checkIn: inD, checkOut: outD }, status: 'Processing', changeRequest: null }) }); document.getElementById('resDetailModal').style.display = 'none'; loadData(); }
 
-        function createRoomTypeInput(rt={}, id) { const d=document.createElement('div'); d.className='room-type-row-inputs'; d.dataset.id=rt.id||'new_'+Math.random(); if(rt.seasonalPrices) seasonalDataStore[d.dataset.id]=rt.seasonalPrices; d.innerHTML=`<input type="text" placeholder="Ad" value="${rt.name||''}" class="room-name"><input type="number" placeholder="$" value="${rt.pricePerNight||0}" class="room-price"><div class="room-type-checkbox-group"><input type="checkbox" ${rt.isExtraBedAllowed?'checked':''} class="room-eb-allowed"><label style="font-size:10px;">Ex.B</label></div><button class="btn-action" onclick="openSeasonalModal('${d.dataset.id}',this)">📅</button><button class="btn-action btn-delete" onclick="this.parentElement.remove()">×</button>`; document.getElementById(id).appendChild(d); }
+        function createRoomTypeInput(rt={}, id) { 
+            const d=document.createElement('div'); d.className='room-type-row-inputs'; d.dataset.id=rt.id||'new_'+Math.random(); 
+            if(rt.seasonalPrices) seasonalDataStore[d.dataset.id]=rt.seasonalPrices; 
+            if(rt.stopSales) stopSaleDataStore[d.dataset.id]=rt.stopSales;
+            
+            d.innerHTML=`
+                <input type="text" placeholder="Ad" value="${rt.name||''}" class="room-name">
+                <input type="number" placeholder="$" value="${rt.pricePerNight||0}" class="room-price">
+                <div class="room-type-checkbox-group" style="display:flex;align-items:center;">
+                    <input type="checkbox" ${rt.isExtraBedAllowed?'checked':''} class="room-eb-allowed">
+                    <label style="font-size:10px;margin-left:2px;">Ex.B</label>
+                </div>
+                <button class="btn-action" style="background:#f1f5f9" title="Mövsümi Qiymət" onclick="openSeasonalModal('${d.dataset.id}',this)">📅</button>
+                <button class="btn-action" style="background:#fee2e2;color:#ef4444;" title="Stop Sale" onclick="openStopSaleModal('${d.dataset.id}',this)">🚫</button>
+                <button class="btn-action btn-delete" title="Sil" onclick="this.parentElement.remove()">×</button>
+            `; 
+            document.getElementById(id).appendChild(d); 
+        }
+        
         function createMealPlanInput(mp={}, id) { const d=document.createElement('div'); d.className='meal-plan-row-inputs'; d.innerHTML=`<input type="text" placeholder="Ad" value="${mp.name||''}" class="meal-name"><input type="number" placeholder="$" value="${mp.pricePerPersonPerNight||0}" class="meal-price"><button class="btn-action btn-delete" onclick="this.parentElement.remove()">×</button>`; document.getElementById(id).appendChild(d); }
-        function resetHotelForm() { document.getElementById('hName').value=''; document.getElementById('hEb').value=''; document.getElementById('roomTypesAdmin').innerHTML=''; document.getElementById('mealPlansAdmin').innerHTML=''; seasonalDataStore={}; createRoomTypeInput({}, 'roomTypesAdmin'); createMealPlanInput({}, 'mealPlansAdmin'); }
-        function openEditHotel(id) { const h = db.hotels.find(x=>x.id===id); if(!h) return; document.getElementById('editHotelId').value=h.id; document.getElementById('editHotelName').value=h.name; document.getElementById('editHotelRegionSelect').value=h.regionId; document.getElementById('editHotelStars').value=h.stars; document.getElementById('editExtraBedPrice').value=h.extraBedPricePerNight; seasonalDataStore={}; document.getElementById('roomTypesModal').innerHTML=''; h.roomTypes.forEach(rt=>createRoomTypeInput(rt,'roomTypesModal')); document.getElementById('mealPlansModal').innerHTML=''; h.mealPlans.forEach(mp=>createMealPlanInput(mp,'mealPlansModal')); document.getElementById('editHotelModal').style.display='flex'; }
-        async function saveHotelFromModal() { const id = document.getElementById('editHotelId').value; const payload = { name: document.getElementById('editHotelName').value, regionId: document.getElementById('editHotelRegionSelect').value, stars: document.getElementById('editHotelStars').value, extraBedPricePerNight: document.getElementById('editExtraBedPrice').value, roomTypes: Array.from(document.querySelectorAll('#roomTypesModal .room-type-row-inputs')).map(r => ({ id: (!r.dataset.id.startsWith('new_') ? Number(r.dataset.id):undefined), name:r.querySelector('.room-name').value, pricePerNight:r.querySelector('.room-price').value, isExtraBedAllowed:r.querySelector('.room-eb-allowed').checked, seasonalPrices: seasonalDataStore[r.dataset.id]||[] })), mealPlans: Array.from(document.querySelectorAll('#mealPlansModal .meal-plan-row-inputs')).map(r => ({ id: r.dataset.id?Number(r.dataset.id):undefined, name:r.querySelector('.meal-name').value, pricePerPersonPerNight:r.querySelector('.meal-price').value })) }; await fetch(`/api/hotels/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); closeModal('editHotelModal'); loadData(); }
-        function openSeasonalModal(id, btn) { currentEditingRoomId=id; const row = btn.closest('.room-type-row-inputs'); document.getElementById('seasonalRoomTitle').textContent = row ? "Room: " + row.querySelector('.room-name').value : ""; document.getElementById('seasonalPriceModal').style.display='flex'; renderSeasonalList(seasonalDataStore[id]||[]); }
+        
+        function resetHotelForm() { 
+            document.getElementById('hName').value=''; 
+            document.getElementById('hEmail').value=''; 
+            document.getElementById('hEb').value=''; 
+            document.getElementById('roomTypesAdmin').innerHTML=''; 
+            document.getElementById('mealPlansAdmin').innerHTML=''; 
+            seasonalDataStore={}; stopSaleDataStore={}; 
+            createRoomTypeInput({}, 'roomTypesAdmin'); 
+            createMealPlanInput({}, 'mealPlansAdmin'); 
+        }
+        
+        function openEditHotel(id) { 
+            const h = db.hotels.find(x=>x.id===id); if(!h) return; 
+            document.getElementById('editHotelId').value=h.id; 
+            document.getElementById('editHotelName').value=h.name; 
+            document.getElementById('editHotelEmail').value=h.email || ''; // Yeni əlavə edildi
+            document.getElementById('editHotelRegionSelect').value=h.regionId; 
+            document.getElementById('editHotelStars').value=h.stars; 
+            document.getElementById('editExtraBedPrice').value=h.extraBedPricePerNight; 
+            seasonalDataStore={}; stopSaleDataStore={}; 
+            document.getElementById('roomTypesModal').innerHTML=''; 
+            h.roomTypes.forEach(rt=>createRoomTypeInput(rt,'roomTypesModal')); 
+            document.getElementById('mealPlansModal').innerHTML=''; 
+            h.mealPlans.forEach(mp=>createMealPlanInput(mp,'mealPlansModal')); 
+            document.getElementById('editHotelModal').style.display='flex'; 
+        }
+        
+        async function saveHotelFromModal() { 
+            const id = document.getElementById('editHotelId').value; 
+            const payload = { 
+                name: document.getElementById('editHotelName').value, 
+                email: document.getElementById('editHotelEmail').value, // Yeni əlavə edildi
+                regionId: document.getElementById('editHotelRegionSelect').value, 
+                stars: document.getElementById('editHotelStars').value, 
+                extraBedPricePerNight: document.getElementById('editExtraBedPrice').value, 
+                roomTypes: Array.from(document.querySelectorAll('#roomTypesModal .room-type-row-inputs')).map(r => ({ 
+                    id: (!r.dataset.id.startsWith('new_') ? Number(r.dataset.id):undefined), 
+                    name:r.querySelector('.room-name').value, 
+                    pricePerNight:r.querySelector('.room-price').value, 
+                    isExtraBedAllowed:r.querySelector('.room-eb-allowed').checked, 
+                    seasonalPrices: seasonalDataStore[r.dataset.id]||[], 
+                    stopSales: stopSaleDataStore[r.dataset.id]||[] 
+                })), 
+                mealPlans: Array.from(document.querySelectorAll('#mealPlansModal .meal-plan-row-inputs')).map(r => ({ 
+                    id: r.dataset.id?Number(r.dataset.id):undefined, 
+                    name:r.querySelector('.meal-name').value, 
+                    pricePerPersonPerNight:r.querySelector('.meal-price').value 
+                })) 
+            }; 
+            await fetch(`/api/hotels/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); 
+            closeModal('editHotelModal'); loadData(); 
+        }
+
+        // SEASONAL PRICE LOGIC
+        function openSeasonalModal(id, btn) { currentEditingRoomId=id; const row = btn.closest('.room-type-row-inputs'); document.getElementById('seasonalRoomTitle').textContent = row ? "Otaq: " + row.querySelector('.room-name').value : ""; document.getElementById('seasonalPriceModal').style.display='flex'; renderSeasonalList(seasonalDataStore[id]||[]); }
         function renderSeasonalList(list) { document.getElementById('seasonalListBody').innerHTML = list.map((x,i)=>`<tr><td>${x.start}</td><td>${x.end}</td><td style="color:#10b981;font-weight:bold;">${x.price}$</td><td><button style="color:red;border:none;background:none;cursor:pointer;" onclick="seasonalDataStore['${currentEditingRoomId}'].splice(${i},1);renderSeasonalList(seasonalDataStore['${currentEditingRoomId}'])">🗑️</button></td></tr>`).join(''); }
         function addSeasonalRange() { const s=document.getElementById('seasStart').value, e=document.getElementById('seasEnd').value, p=document.getElementById('seasPrice').value; if(!s||!e||!p) return; if(!seasonalDataStore[currentEditingRoomId]) seasonalDataStore[currentEditingRoomId]=[]; seasonalDataStore[currentEditingRoomId].push({start:s,end:e,price:p}); renderSeasonalList(seasonalDataStore[currentEditingRoomId]); document.getElementById('seasStart').value=''; document.getElementById('seasEnd').value=''; document.getElementById('seasPrice').value=''; }
         function saveSeasonalDataToRoom() { const btn = document.querySelector(`.room-type-row-inputs[data-id="${currentEditingRoomId}"] button[onclick^="openSeasonalModal"]`); if(btn && seasonalDataStore[currentEditingRoomId]?.length>0) { btn.style.background="#8b5cf6"; btn.style.color="white"; } closeModal('seasonalPriceModal'); }
+        
+        // STOP SALE LOGIC
+        function openStopSaleModal(id, btn) { 
+            currentEditingRoomId=id; 
+            const row = btn.closest('.room-type-row-inputs'); 
+            document.getElementById('stopSaleRoomTitle').textContent = row ? "Otaq: " + row.querySelector('.room-name').value : ""; 
+            document.getElementById('stopSaleModal').style.display='flex'; 
+            renderStopSaleList(stopSaleDataStore[id]||[]); 
+        }
+        function renderStopSaleList(list) { 
+            document.getElementById('stopSaleListBody').innerHTML = list.map((x,i)=>`<tr><td>${x.start}</td><td>${x.end}</td><td><button style="color:red;border:none;background:none;cursor:pointer;" onclick="stopSaleDataStore['${currentEditingRoomId}'].splice(${i},1);renderStopSaleList(stopSaleDataStore['${currentEditingRoomId}'])">🗑️</button></td></tr>`).join(''); 
+        }
+        function addStopSaleRange() { 
+            const s=document.getElementById('ssStart').value, e=document.getElementById('ssEnd').value; 
+            if(!s||!e) return; 
+            if(!stopSaleDataStore[currentEditingRoomId]) stopSaleDataStore[currentEditingRoomId]=[]; 
+            stopSaleDataStore[currentEditingRoomId].push({start:s,end:e}); 
+            renderStopSaleList(stopSaleDataStore[currentEditingRoomId]); 
+            document.getElementById('ssStart').value=''; document.getElementById('ssEnd').value=''; 
+        }
+        function saveStopSaleDataToRoom() { 
+            const btn = document.querySelector(`.room-type-row-inputs[data-id="${currentEditingRoomId}"] button[onclick^="openStopSaleModal"]`); 
+            if(btn && stopSaleDataStore[currentEditingRoomId]?.length>0) { 
+                btn.style.background="#ef4444"; btn.style.color="white"; 
+            } else if(btn) { 
+                btn.style.background="#fee2e2"; btn.style.color="#ef4444"; 
+            } 
+            closeModal('stopSaleModal'); 
+        }
+
         function closeModal(id) { document.getElementById(id).style.display = 'none'; if(id==='editHotelModal') document.getElementById('editHotelMsg').style.display='none'; }
 
         loadData();
