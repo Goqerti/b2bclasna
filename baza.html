@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <title>Database İdarəetmə Paneli (MongoDB)</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; background: #f4f7f6; color: #333; height: 100vh; overflow: hidden; display: flex; }
+        
+        /* LOGIN EKRANI */
+        #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .login-box { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 350px; text-align: center; }
+        .login-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; font-size: 15px; }
+        .login-box button { width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold; }
+        .login-box button:hover { background: #2980b9; }
+
+        /* ƏSAS PANEL */
+        #mainUI { display: none; width: 100%; height: 100%; }
+        
+        .sidebar { width: 250px; background: #2c3e50; color: white; display: flex; flex-direction: column; }
+        .sidebar h2 { text-align: center; font-size: 18px; margin: 20px 0; padding-bottom: 20px; border-bottom: 1px solid #34495e; color: #ecf0f1; }
+        .nav-link { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; font-size: 15px; }
+        .nav-link:hover { background: #34495e; }
+        .nav-link.active { background: #3498db; border-left-color: #ecf0f1; font-weight: bold; }
+        
+        .reset-btn-container { margin-top: auto; padding: 20px; text-align: center; border-top: 1px solid #34495e; }
+        .reset-btn { background: #e74c3c; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
+        .reset-btn:hover { background: #c0392b; }
+
+        .content { flex: 1; display: flex; flex-direction: column; background: #ecf0f1; }
+        .header { background: white; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .header h3 { margin: 0; color: #2c3e50; text-transform: uppercase; }
+        
+        .table-container { padding: 20px; overflow-y: auto; flex: 1; }
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+        th { background: #34495e; color: white; font-weight: 600; }
+        tr:hover { background: #f9f9f9; }
+        
+        .btn-edit { background: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 12px; }
+        .btn-del { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 12px; margin-left: 5px; }
+
+        /* JSON REDAKTƏ MODALI */
+        #jsonModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; width: 800px; max-width: 90%; height: 80vh; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+        .modal-header { padding: 15px 20px; background: #2c3e50; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { margin: 0; font-size: 16px; }
+        .modal-header button { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+        .json-editor { flex: 1; width: 100%; padding: 15px; font-family: monospace; font-size: 14px; border: none; background: #fdfdfd; resize: none; outline: none; }
+        .modal-footer { padding: 15px 20px; background: #f4f7f6; text-align: right; border-top: 1px solid #ddd; }
+        .btn-save { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="loginOverlay">
+        <div class="login-box">
+            <h2 style="color: #2c3e50; margin-top: 0;">DB Admin Girişi</h2>
+            <input type="text" id="dbUser" placeholder="İstifadəçi adı">
+            <input type="password" id="dbPass" placeholder="Şifrə">
+            <button onclick="checkLogin()">Daxil Ol</button>
+        </div>
+    </div>
+
+    <div id="mainUI">
+        <div class="sidebar">
+            <h2>🗄️ B2B Database</h2>
+            <div class="nav-link active" onclick="loadCollection('companies', this)">🏢 Companies</div>
+            <div class="nav-link" onclick="loadCollection('regions', this)">🌍 Regions</div>
+            <div class="nav-link" onclick="loadCollection('hotels', this)">🏨 Hotels</div>
+            <div class="nav-link" onclick="loadCollection('operations', this)">🚐 Operations</div>
+            <div class="nav-link" onclick="loadCollection('agents', this)">👥 Agents</div>
+            <div class="nav-link" onclick="loadCollection('pending_agents', this)">⏳ Pending Agents</div>
+            <div class="nav-link" onclick="loadCollection('reservations', this)">📝 Reservations</div>
+            
+            <div class="reset-btn-container">
+                <button class="reset-btn" onclick="resetDatabase()">⚠️ BÜTÜN BAZANI SIFIRLA</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="header">
+                <h3 id="collectionTitle">Companies</h3>
+                <span style="color: #7f8c8d; font-size: 14px;">Server: MongoDB localhost:27017</span>
+            </div>
+            <div class="table-container">
+                <table id="dataTable">
+                    <thead><tr id="tableHead"></tr></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="jsonModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>JSON Redaktoru (<span id="editingDocId"></span>)</h3>
+                <button onclick="closeModal()">×</button>
+            </div>
+            <textarea class="json-editor" id="jsonInput"></textarea>
+            <div class="modal-footer">
+                <button class="btn-save" onclick="saveJSON()">Yadda Saxla</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let fullData = {};
+        let currentColl = 'companies';
+        let editingMongoId = null;
+
+        // TƏHLÜKƏSİZLİK (SADƏ LOGIN)
+        function checkLogin() {
+            const u = document.getElementById('dbUser').value;
+            const p = document.getElementById('dbPass').value;
+            if (u === 'sirvan' && p === 'sirvan000') {
+                sessionStorage.setItem('db_auth_passed', 'true');
+                initUI();
+            } else {
+                alert("Yanlış istifadəçi adı və ya şifrə!");
+            }
+        }
+
+        window.onload = () => {
+            if (sessionStorage.getItem('db_auth_passed') === 'true') {
+                initUI();
+            }
+        };
+
+        function initUI() {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainUI').style.display = 'flex';
+            fetchData();
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch('/api/db/all');
+                fullData = await response.json();
+                renderTable(currentColl);
+            } catch (e) {
+                alert("Baza məlumatları gətirilə bilmədi: " + e.message);
+            }
+        }
+
+        function loadCollection(name, btnElement) {
+            currentColl = name;
+            document.getElementById('collectionTitle').innerText = name;
+            
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
+            
+            renderTable(name);
+        }
+
+        function renderTable(name) {
+            const data = fullData[name] || [];
+            const thead = document.getElementById('tableHead');
+            const tbody = document.getElementById('tableBody');
+            
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Kolleksiya boşdur</td></tr>`;
+                return;
+            }
+
+            // Başlıqlar (Əsas qısa məlumatlar göstərilir ki, cədvəl dağılmasın)
+            thead.innerHTML = `
+                <th>_id (Mongo)</th>
+                <th>ID (Sistem)</th>
+                <th>Məlumat Özəti</th>
+                <th style="width: 150px;">Əməliyyat</th>
+            `;
+
+            data.forEach(item => {
+                let summary = item.name || item.username || (item.summary ? item.summary.hotelNames : "Baxmaq üçün redaktə edin");
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color:#7f8c8d; font-size:12px;">${item._id}</td>
+                    <td><b>${item.id || '-'}</b></td>
+                    <td>${summary}</td>
+                    <td>
+                        <button class="btn-edit" onclick="openEdit('${item._id}')">Redaktə (JSON)</button>
+                        <button class="btn-del" onclick="deleteDoc('${item._id}')">Sil</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openEdit(mongoId) {
+            editingMongoId = mongoId;
+            document.getElementById('editingDocId').innerText = mongoId;
+            
+            const item = fullData[currentColl].find(x => x._id === mongoId);
+            document.getElementById('jsonInput').value = JSON.stringify(item, null, 4);
+            document.getElementById('jsonModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('jsonModal').style.display = 'none';
+            editingMongoId = null;
+        }
+
+        async function saveJSON() {
+            const rawJson = document.getElementById('jsonInput').value;
+            let parsedData;
+            try {
+                parsedData = JSON.parse(rawJson);
+            } catch (e) {
+                return alert("Geçərsiz JSON formatı! Zəhmət olmasa mötərizə və ya vergülləri düzgün qoyun.\nXəta: " + e.message);
+            }
+
+            try {
+                const res = await fetch(`/api/db/update/${currentColl}/${editingMongoId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(parsedData)
+                });
+                
+                if (res.ok) {
+                    closeModal();
+                    fetchData(); // Yenidən yükləyir
+                } else {
+                    alert("Saxlanılarkən xəta baş verdi.");
+                }
+            } catch (e) {
+                alert("Server xətası: " + e.message);
+            }
+        }
+
+        async function deleteDoc(mongoId) {
+            if (!confirm("Bu sənədi (document) bazadan həmişəlik silmək istədiyinizə əminsiniz?")) return;
+
+            try {
+                const res = await fetch(`/api/db/delete/${currentColl}/${mongoId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    fetchData();
+                } else {
+                    alert("Silinərkən xəta baş verdi.");
+                }
+            } catch (e) {
+                alert("Server xətası: " + e.message);
+            }
+        }
+
+        async function resetDatabase() {
+            if (!confirm("DİQQƏT! Bütün verilənlər bazası (Agentlər, Hotellər, Rezervasiyalar) tamamilə SİLİNƏCƏK. Əminsiniz?")) return;
+            if (!confirm("Bu əməliyyat GERİ QAYTARILA BİLMƏZ! Son qərarınızdır?")) return;
+
+            try {
+                const res = await fetch(`/api/db/reset`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    fetchData();
+                } else {
+                    alert("Xəta: " + data.error);
+                }
+            } catch (e) {
+                alert("Server xətası: " + e.message);
+            }
+        }
+    </script>
+</body>
+</html>
