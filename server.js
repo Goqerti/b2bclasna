@@ -84,8 +84,10 @@ function writeB2BDB(data) {
 }
 
 // ==========================================
-//  HELPER: SEND EMAIL FUNCTION
+//  HELPER: SEND EMAIL FUNCTIONS
 // ==========================================
+
+// Menecerlərə gedən məktub (Yeni rezervasiya yarandıqda)
 async function sendReservationEmail(reservation, agentName, companyName, managerEmails) {
     if (!managerEmails || managerEmails.length === 0) return;
 
@@ -138,7 +140,7 @@ async function sendReservationEmail(reservation, agentName, companyName, manager
 
     try {
         await transporter.sendMail({
-            from: '"B2B System" <sirvanback@gmail.com>',
+            from: '"B2B System" <telegramsirvan@gmail.com>',
             to: managerEmails.join(', '),
             subject: subject,
             html: htmlContent
@@ -146,6 +148,78 @@ async function sendReservationEmail(reservation, agentName, companyName, manager
         console.log(`Email sent to: ${managerEmails.join(', ')} regarding Res #${reservation.id}`);
     } catch (error) {
         console.error("Email sending failed:", error);
+    }
+}
+
+// Otelə gedən məktub (Rezervasiya təsdiqləndikdə)
+async function sendHotelConfirmationEmail(reservation, hotelObj) {
+    if (!hotelObj.email) return;
+
+    const subject = `✅ Yeni Rezervasiya Təsdiqi: #${reservation.id} | B2B Booking System`;
+    
+    // Yalnızca bu otelə aid otaqları tapırıq
+    const hotelRooms = reservation.summary.rooms ? reservation.summary.rooms.filter(rm => rm.hotelName.trim() === hotelObj.name.trim()) : [];
+    let roomDetailsHtml = hotelRooms.map(rm => `<li style="margin-bottom: 5px;">${rm.roomName}</li>`).join('');
+    if (!roomDetailsHtml) roomDetailsHtml = `<li>${reservation.summary.hotelNames}</li>`;
+
+    let guestsHtml = (reservation.travelers || []).map(t => `<li style="margin-bottom: 5px;">${t.name} ${t.surname} (${t.type}) - ${t.nationality || ''}</li>`).join('');
+
+    const htmlContent = `
+        <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; margin: 0 auto;">
+            <div style="background-color: #10b981; color: white; padding: 20px; text-align: center;">
+                <h2 style="margin: 0;">Rezervasiya Təsdiqləndi</h2>
+            </div>
+            <div style="padding: 20px;">
+                <p style="font-size: 16px;">Hörmətli <b>${hotelObj.name}</b> rəhbərliyi,</p>
+                <p>Sistemimizdən sizə yeni bir rezervasiya təsdiqlənmişdir. Zəhmət olmasa detalları yoxlayın:</p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                    <tr style="background-color: #f9fafb;">
+                        <td style="padding: 10px; border-bottom: 1px solid #eee; width: 35%;"><strong>Rezervasiya Nömrəsi:</strong></td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">#${reservation.id}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Giriş (Check-in):</strong></td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee; color: #3b82f6; font-weight: bold;">${reservation.summary.checkIn}</td>
+                    </tr>
+                    <tr style="background-color: #f9fafb;">
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Çıxış (Check-out):</strong></td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee; color: #ef4444; font-weight: bold;">${reservation.summary.checkOut}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Gecə Sayı:</strong></td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${reservation.summary.nights} Gecə</td>
+                    </tr>
+                    <tr style="background-color: #f9fafb;">
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Qonaq Sayı:</strong></td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${reservation.summary.adults} Böyük, ${reservation.summary.children} Uşaq</td>
+                    </tr>
+                </table>
+
+                <h3 style="margin-top: 25px; color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">Seçilmiş Otaqlar</h3>
+                <ul style="padding-left: 20px;">${roomDetailsHtml}</ul>
+
+                <h3 style="margin-top: 25px; color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">Qonaqların Siyahısı</h3>
+                <ul style="padding-left: 20px;">${guestsHtml}</ul>
+
+                <p style="margin-top: 30px; font-size: 13px; color: #6b7280;">Hər hansı bir sualınız yaranarsa, zəhmət olmasa bizimlə əlaqə saxlayın.</p>
+            </div>
+            <div style="background-color: #f3f4f6; padding: 15px; text-align: center; font-size: 12px; color: #6b7280;">
+                Təşəkkürlər,<br><b>B2B Booking System</b>
+            </div>
+        </div>
+    `;
+
+    try {
+        await transporter.sendMail({
+            from: '"B2B System" <telegramsirvan@gmail.com>',
+            to: hotelObj.email,
+            subject: subject,
+            html: htmlContent
+        });
+        console.log(`Confirmation email sent to hotel: ${hotelObj.name} (${hotelObj.email})`);
+    } catch (error) {
+        console.error("Hotel email sending failed:", error);
     }
 }
 
@@ -371,13 +445,29 @@ app.post("/api/reservations", (req, res) => {
     res.json({ message: "Reservation saved", id });
 });
 
-app.put("/api/reservations/status/:id", (req, res) => {
+app.put("/api/reservations/status/:id", async (req, res) => {
     const db = readB2BDB();
     const r = db.reservations.find(x => x.id === Number(req.params.id));
     if(r) {
+        const oldStatus = r.status;
         r.status = req.body.status;
+        
         if(req.body.changeRequest) r.changeRequest = req.body.changeRequest;
         else if(['Confirmed','Processing','Cancelled','Admin Check'].includes(r.status)) r.changeRequest = null;
+        
+        // STATUS "Confirmed" OLARSA VƏ ƏVVƏL "Confirmed" DEYİLDİSƏ, HOTELƏ MAİL GÖNDƏR
+        if (r.status === 'Confirmed' && oldStatus !== 'Confirmed') {
+            const hotelNamesInRes = r.summary.rooms ? r.summary.rooms.map(rm => rm.hotelName.trim()) : [];
+            const uniqueHotelNames = [...new Set(hotelNamesInRes)];
+            
+            uniqueHotelNames.forEach(async (hName) => {
+                const hotelObj = db.hotels.find(h => h.name.trim() === hName);
+                if (hotelObj && hotelObj.email) {
+                    await sendHotelConfirmationEmail(r, hotelObj);
+                }
+            });
+        }
+
         writeB2BDB(db); res.json({ success: true });
     } else res.status(404).json({error: "Not found"});
 });
