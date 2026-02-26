@@ -249,7 +249,7 @@
     let currentLang = localStorage.getItem('b2b_lang') || 'az';
     function t(key) { return translations[currentLang][key] || key; }
     function changeLanguage(lang) { currentLang = lang; localStorage.setItem('b2b_lang', lang); updateTexts(); }
-    function updateTexts() { document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); }); document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-ph')); }); document.getElementById('languageSelect').value = currentLang; renderOperations(); recalcTotals(); if(document.getElementById('reservationsView').style.display === 'block') loadMyRes(); }
+    function updateTexts() { document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); }); document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-ph')); }); document.getElementById('languageSelect').value = currentLang; renderOperations(); updateRoomDropdowns(); recalcTotals(); if(document.getElementById('reservationsView').style.display === 'block') loadMyRes(); }
 
     const LOGGED_IN_AGENT = JSON.parse(localStorage.getItem('b2b_agent_auth'));
     if (!LOGGED_IN_AGENT || !LOGGED_IN_AGENT.success) window.location.href = 'login.html'; 
@@ -264,11 +264,10 @@
       const listContainer = document.getElementById('operationsList'); const hiddenContainer = document.getElementById('hiddenOperationsData');
       listContainer.innerHTML = ''; hiddenContainer.innerHTML = ''; 
       
-      // MULTI-TENANT FILTER: YALNIZ ŞİRKƏTƏ AİD VƏ YA GLOBAL
-      const myOps = dbData.operations.filter(o => o.agentId === LOGGED_IN_AGENT.companyId || o.agentId === null);
-
-      if (!myOps || myOps.length === 0) { listContainer.innerHTML = `<span style="font-size:13px;color:#6b7280; font-style: italic;">${t('opNone')}</span>`; return; }
+      const myCompId = Number(LOGGED_IN_AGENT.companyId);
+      const myOps = dbData.operations.filter(o => o.agentId === myCompId || o.agentId === null);
       
+      if (!myOps || myOps.length === 0) { listContainer.innerHTML = `<span style="font-size:13px;color:#6b7280; font-style: italic;">${t('opNone')}</span>`; return; }
       myOps.forEach(op => {
         const isSelected = selectedOpIds.has(op.id);
         const row = document.createElement('div'); row.className = `op-select-row ${isSelected ? 'selected' : ''}`; row.onclick = () => toggleOperation(op.id);
@@ -292,22 +291,27 @@
     function renderStars() { const box = document.getElementById('starsBox'); box.innerHTML = ''; [2,3,4,5].forEach(s => { const lbl = document.createElement('label'); lbl.className = 'filter-item'; lbl.innerHTML = `<input type="checkbox" name="starFilter" value="${s}" onchange="onFilterChange()"> ${s}★`; box.appendChild(lbl); }); }
     function onFilterChange() { renderHotelsFilter(); renderHotelBlocks(); recalcTotals(); }
     
-    // --- MULTI-TENANT FILTER (HOTELS) ---
     function filterHotels() { 
         const regs = Array.from(document.querySelectorAll('input[name="regionFilter"]:checked')).map(e=>e.value); 
         const stars = Array.from(document.querySelectorAll('input[name="starFilter"]:checked')).map(e=>e.value); 
-        const myCompId = LOGGED_IN_AGENT.companyId;
-
+        
+        const myCompId = Number(LOGGED_IN_AGENT.companyId);
+        
         return dbData.hotels.filter(h => {
             const regionMatch = (regs.length===0 || regs.includes(String(h.regionId)));
             const starMatch = (stars.length===0 || stars.includes(String(h.stars)));
-            // Company Check: Hotel belongs to my company OR is global (null)
             const agentMatch = (h.agentId === myCompId || h.agentId === null);
             return regionMatch && starMatch && agentMatch;
         }); 
     }
     function renderHotelsFilter() { const box = document.getElementById('hotelsBox'); box.innerHTML = ''; filterHotels().forEach(h => { const lbl = document.createElement('label'); lbl.className = 'hotel-item'; lbl.innerHTML = `<input type="checkbox" name="hotelFilter" value="${h.id}" onchange="renderHotelBlocks();recalcTotals()"> <span class="hotel-name">${h.name}</span> <span class="hotel-stars">${'★'.repeat(h.stars)}</span>`; box.appendChild(lbl); }); }
     
+    function isRoomOnStopSale(room, checkInStr, checkOutStr) {
+        if (!room.stopSales || room.stopSales.length === 0) return false;
+        if (!checkInStr || !checkOutStr) return false;
+        return room.stopSales.some(ss => checkInStr <= ss.end && checkOutStr > ss.start);
+    }
+
     function renderHotelBlocks() {
         const container = document.getElementById('hotelsCalcs'); container.innerHTML = ''; const selectedIds = Array.from(document.querySelectorAll('input[name="hotelFilter"]:checked')).map(e=>e.value);
         document.getElementById('selectedHotelsCount').textContent = selectedIds.length;
@@ -319,16 +323,61 @@
             container.appendChild(div); renderMeals(h); addRoom(h.id);
         });
     }
+
     function addRoom(hotelId) {
         const h = dbData.hotels.find(x => x.id === hotelId); const div = document.createElement('div'); div.className = 'room-row';
-        let opts = `<option value="">${t('selRoom')}</option>` + h.roomTypes.map(r => `<option value="${r.id}" data-eb="${r.isExtraBedAllowed}">${r.name}</option>`).join('');
+        const inDate = document.getElementById('checkIn').value;
+        const outDate = document.getElementById('checkOut').value;
+        
+        let opts = `<option value="">${t('selRoom')}</option>` + h.roomTypes.map(r => {
+            const isStop = isRoomOnStopSale(r, inDate, outDate);
+            return `<option value="${r.id}" data-eb="${r.isExtraBedAllowed}" ${isStop?'disabled':''}>${r.name}${isStop?' (Stop Sale)':''}</option>`;
+        }).join('');
+        
         div.innerHTML = `<select class="room-type-select" onchange="recalcTotals()">${opts}</select><div style="display:flex; align-items:center; gap:5px;"><span style="font-size:12px; font-weight:700; color:#4b5563;" data-i18n="lblRoomQty">${t('lblRoomQty')}</span><div class="qty-controls"><button type="button" class="qty-btn" onclick="adjQty(this,-1)">—</button><span class="qty-value">1</span><button type="button" class="qty-btn" onclick="adjQty(this,1)">+</button></div></div><label class="extra-bed-container" style="display:none; margin-left:10px; font-size:13px; font-weight:700; color:#10b981;"><input type="checkbox" class="extra-bed-checkbox" onchange="recalcTotals()"> Extra Bed</label><button type="button" class="room-remove" onclick="this.parentElement.remove();recalcTotals()">×</button>`;
         document.getElementById(`rooms_h${hotelId}`).appendChild(div);
-        div.querySelector('select').addEventListener('change', function() { const opt = this.options[this.selectedIndex]; div.querySelector('.extra-bed-container').style.display = (opt.dataset.eb === 'true') ? 'flex' : 'none'; });
+        div.querySelector('select').addEventListener('change', function() { const opt = this.options[this.selectedIndex]; div.querySelector('.extra-bed-container').style.display = (opt && opt.dataset.eb === 'true') ? 'flex' : 'none'; });
     }
+
+    function updateRoomDropdowns() {
+        const inDate = document.getElementById('checkIn').value;
+        const outDate = document.getElementById('checkOut').value;
+        document.querySelectorAll('.hotel-block').forEach(hb => {
+            const hidMatch = hb.querySelector('.add-room-btn').getAttribute('onclick').match(/\d+/);
+            if(!hidMatch) return;
+            const h = dbData.hotels.find(x => String(x.id) === hidMatch[0]);
+            if(!h) return;
+            
+            hb.querySelectorAll('.room-type-select').forEach(sel => {
+                let mustReset = false;
+                Array.from(sel.options).forEach(opt => {
+                    if(!opt.value) return;
+                    const roomObj = h.roomTypes.find(rt => String(rt.id) === opt.value);
+                    if(roomObj) {
+                        const isStop = isRoomOnStopSale(roomObj, inDate, outDate);
+                        if(isStop) {
+                            opt.disabled = true;
+                            if(!opt.text.includes('(Stop Sale)')) opt.text += ' (Stop Sale)';
+                            if(sel.value === opt.value) mustReset = true; 
+                        } else {
+                            opt.disabled = false;
+                            opt.text = opt.text.replace(' (Stop Sale)', '');
+                        }
+                    }
+                });
+                if(mustReset) { 
+                    sel.value = ""; 
+                    const ebContainer = sel.parentElement.querySelector('.extra-bed-container');
+                    if(ebContainer) ebContainer.style.display = 'none';
+                }
+            });
+        });
+    }
+
     function adjQty(btn, delta) { const span = btn.parentElement.querySelector('.qty-value'); let v = parseInt(span.textContent) + delta; if(v < 1) v = 1; span.textContent = v; recalcTotals(); }
     function renderMeals(h) { const c = document.getElementById(`meals_h${h.id}`); c.innerHTML = `<div style="font-weight:600;font-size:14px;margin-bottom:5px;">Meal Plan:</div><label style="margin-right:10px;display:inline-flex;gap:5px;"><input type="radio" name="meal_${h.id}" value="0" checked onchange="recalcTotals()"> None</label>` + h.mealPlans.map(m => `<label style="margin-right:10px;display:inline-flex;gap:5px;"><input type="radio" name="meal_${h.id}" value="${m.pricePerPersonPerNight}" onchange="recalcTotals()"> ${m.name} (${m.pricePerPersonPerNight}$)</label>`).join(''); }
     function getMaxNights() { const d1 = new Date(document.getElementById('checkIn').value); const d2 = new Date(document.getElementById('checkOut').value); if(d1 && d2 && d2 > d1) { const n = Math.round((d2-d1)/(1000*60*60*24)); document.getElementById('nights').textContent = n; return n; } document.getElementById('nights').textContent = 0; return 0; }
+    
     function calculateTotalRoomPrice(room, checkInStr, checkOutStr) {
         if (!checkInStr || !checkOutStr) return 0; const start = new Date(checkInStr); const end = new Date(checkOutStr); if (start >= end) return 0;
         let total = 0; const current = new Date(start);
@@ -350,7 +399,6 @@
         document.getElementById('reserveBtn').disabled = (totalBookedNights === 0);
     }
     
-    // --- UPDATED SUMMARY (Room Details) ---
     function getSummary() {
         let roomDetails = [];
         document.querySelectorAll('.hotel-block').forEach(hb => {
@@ -358,26 +406,21 @@
             hb.querySelectorAll('.room-row').forEach(rr => {
                 const sel = rr.querySelector('select');
                 if(sel && sel.value) {
-                    const rName = sel.options[sel.selectedIndex].text;
+                    const rName = sel.options[sel.selectedIndex].text.replace(' (Stop Sale)', '');
                     const qty = rr.querySelector('.qty-value').textContent;
-                    roomDetails.push({
-                        hotelName: hName,
-                        roomName: `${hName} - ${rName} (x${qty})`,
-                        quantity: qty
-                    });
+                    roomDetails.push({ hotelName: hName, roomName: `${hName} - ${rName} (x${qty})`, quantity: qty });
                 }
             });
         });
 
         return {
-            agentResNumber: document.getElementById('agentResNumber').value,
-            flightNumber: document.getElementById('agentFlightNumber').value,
+            agentResNumber: document.getElementById('agentResNumber').value, flightNumber: document.getElementById('agentFlightNumber').value,
             checkIn: document.getElementById('checkIn').value, checkOut: document.getElementById('checkOut').value,
             nights: document.getElementById('nights').textContent, adults: document.getElementById('adults').value, children: document.getElementById('children').value,
             totalPrice: parseFloat(document.getElementById('grandTotal').textContent.replace(' $','').replace(/,/g,'')),
             hotelNames: Array.from(document.querySelectorAll('.hotel-block-title')).map(e => e.childNodes[0].textContent.trim()).join(', '),
             operationsInfo: Array.from(document.querySelectorAll('.op-qty-input')).filter(e=>parseInt(e.textContent)>0).map(e=> `${e.dataset.opName} (${e.dataset.type} x ${e.textContent})`).join(', '),
-            rooms: roomDetails // Sends details to server
+            rooms: roomDetails
         };
     }
 
@@ -387,10 +430,7 @@
         const opsLine = (!s.operationsInfo || s.operationsInfo === '') ? '' : `<div class="sum-row"><span class="sum-icon">🚐</span> ${s.operationsInfo}</div>`;
         const resLine = (!s.agentResNumber) ? '' : `<div class="sum-row"><span class="sum-icon">🔖</span> Ref: <b>${s.agentResNumber}</b></div>`;
         const flightLine = (!s.flightNumber) ? '' : `<div class="sum-row"><span class="sum-icon">✈️</span> Flight: <b>${s.flightNumber}</b></div>`;
-        
-        let hotelContent = '';
-        if (s.rooms && s.rooms.length > 0) { hotelContent = s.rooms.map(r => `<div>• ${r.roomName}</div>`).join(''); } else { hotelContent = s.hotelNames; }
-
+        let hotelContent = ''; if (s.rooms && s.rooms.length > 0) { hotelContent = s.rooms.map(r => `<div>• ${r.roomName}</div>`).join(''); } else { hotelContent = s.hotelNames; }
         summaryDiv.innerHTML = `<div class="summary-box"><div class="summary-left"><div class="sum-row" style="color:#1F2937; font-weight:700; font-size:16px; margin-bottom:12px; display:block;"><span class="sum-icon">🏨</span> ${hotelContent}</div><div class="sum-row"><span class="sum-icon">📅</span> ${s.checkIn} — ${s.checkOut} (${s.nights} nights)</div><div class="sum-row"><span class="sum-icon">👥</span> ${s.adults} Ad, ${s.children} Chd</div>${resLine}${flightLine}${opsLine}</div><div class="summary-right"><div class="sum-total-label">${t('lblTotalAmount')}</div><div class="sum-total-price">${formatMoney(s.totalPrice)}</div></div></div>`;
         const tf = document.getElementById('travelersForm'); tf.innerHTML = '';
         for(let i=0; i<parseInt(s.adults); i++) tf.innerHTML += genTravelerCard(t('lblAdult'), i);
@@ -421,15 +461,9 @@
                 else if(rawStatus.includes('Redaktə') || rawStatus === 'Edited') displayStatus = t('statusEdit');
                 
                 const isEditable = (rawStatus === 'Pending' || rawStatus === t('statusPending') || rawStatus === 'Processing');
-                
-                // Agent Date Change Button
                 let actionBtns = `<span style="color:#999; font-size:11px;">-</span>`;
-                if(rawStatus === 'Agent Date Change') {
-                    actionBtns = `<button class="action-btn" style="background:#3b82f6; color:white;" onclick="openDateChangeModal('${r.id}')">${t('btnChangeDate')}</button>`;
-                } else if(isEditable) {
-                    actionBtns = `<button class="action-btn edit-btn" onclick="openEditDetailsModal('${r.id}')">✏️ ${t('colEdit')}</button>
-                                  <button class="action-btn cancel-btn" onclick="cancelReservation('${r.id}')">❌ ${t('colCancel')}</button>`;
-                }
+                if(rawStatus === 'Agent Date Change') { actionBtns = `<button class="action-btn" style="background:#3b82f6; color:white;" onclick="openDateChangeModal('${r.id}')">${t('btnChangeDate')}</button>`; } 
+                else if(isEditable) { actionBtns = `<button class="action-btn edit-btn" onclick="openEditDetailsModal('${r.id}')">✏️ ${t('colEdit')}</button><button class="action-btn cancel-btn" onclick="cancelReservation('${r.id}')">❌ ${t('colCancel')}</button>`; }
                 
                 const div = document.createElement('div'); div.className = 'agent-res-row'; 
                 div.innerHTML = `<div>#${r.id}</div><div>${r.summary.checkIn} <br> <span style="font-size:11px;color:#666;">${r.summary.nights} nights</span></div><div style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.summary.hotelNames}</div><div><span style="padding:3px 8px; border-radius:10px; font-size:11px; font-weight:bold; background:${displayStatus === t('statusConfirmed') ? '#dcfce7' : (displayStatus === t('statusCancelled') ? '#fee2e2' : '#fef9c3')}; color:${displayStatus === t('statusConfirmed') ? '#166534' : (displayStatus === t('statusCancelled') ? '#991b1b' : '#854d0e')};">${displayStatus}</span></div><div style="text-align:right; font-weight:bold;">${formatMoney(r.summary.totalPrice)}</div><div style="text-align:center; grid-column: span 2; display:flex; justify-content:center; gap:5px;">${actionBtns}</div>`; 
@@ -438,18 +472,14 @@
         });
     }
     
-    // --- NEW: DATE CHANGE LOGIC ---
     function openDateChangeModal(id) { document.getElementById('dcResId').value = id; document.getElementById('dateChangeModal').style.display = 'flex'; }
     function submitDateChange() {
-        const id = document.getElementById('dcResId').value;
-        const newIn = document.getElementById('dcCheckIn').value;
-        const newOut = document.getElementById('dcCheckOut').value;
+        const id = document.getElementById('dcResId').value; const newIn = document.getElementById('dcCheckIn').value; const newOut = document.getElementById('dcCheckOut').value;
         if(!newIn || !newOut) { alert(t('alertSelDates')); return; }
         fetch(`/api/reservations/status/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Date Change Requested', changeRequest: { newCheckIn: newIn, newCheckOut: newOut } }) })
         .then(r => r.json()).then(d => { if(d.success) { alert(t('alertDateSent')); document.getElementById('dateChangeModal').style.display = 'none'; loadMyRes(); } else { alert('Error: ' + d.error); } });
     }
 
-    // --- CANCEL LOGIC (PUT) ---
     function cancelReservation(id) { 
         if(!confirm(t('alertCancel'))) return; 
         fetch(`/api/reservations/status/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Cancelled' }) })
@@ -461,7 +491,11 @@
     function submitEditDetails() { closeEditDetailsModal(); alert(t('alertSaved')); }
     
     document.addEventListener('DOMContentLoaded', () => { fetchData(); showAgentView('booking'); });
-    ['checkIn','checkOut','adults','children'].forEach(id => document.getElementById(id).addEventListener('change', recalcTotals));
+
+    ['checkIn','checkOut','adults','children'].forEach(id => document.getElementById(id).addEventListener('change', () => {
+        updateRoomDropdowns();
+        recalcTotals();
+    }));
   </script>
 </body>
 </html>
